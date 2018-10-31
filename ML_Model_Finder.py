@@ -36,30 +36,30 @@ import shutil
 
 
 def dataVisualization(data, target_feat):
-    # ### Univariate Histograms
-    #     pyplot.rcParams.update({'font.size': 2})
-    #     data.hist()
-    #     pyplot.rcParams.update({'font.size': 2})
-    #
-    #     pyplot.yticks(rotation=90)
-    #     pyplot.savefig('Univr-Hist.eps', format='eps')
-    #     pyplot.show()
-    #
-    #     pyplot.close()
-    # #########################
-    #
-    # ### Box and Whisker Plots ###
-    #     pyplot.rcParams.update({'font.size': 2})
-    #     data.plot(kind='box', subplots=True, layout=(int(len(list(data.columns.values))/2),int(len(list(data.columns.values))/2)), sharex=False, sharey=False)
-    #
-    #
-    #     pyplot.yticks(rotation=90)
-    #     pyplot.savefig('Box-Whis.eps', format='eps')
-    #     pyplot.show()
-    #
-    #
-    #     pyplot.close()
-    # #########################
+### Univariate Histograms
+#     pyplot.rcParams.update({'font.size': 2})
+#     data.hist()
+#     pyplot.rcParams.update({'font.size': 2})
+#
+#     pyplot.yticks(rotation=90)
+#     pyplot.savefig('Univr-Hist.eps', format='eps')
+#     pyplot.show()
+#
+#     pyplot.close()
+# #########################
+#
+# ### Box and Whisker Plots ###
+#     pyplot.rcParams.update({'font.size': 2})
+#     data.plot(kind='box', subplots=True, layout=(int(len(list(data.columns.values))/2),int(len(list(data.columns.values))/2)), sharex=False, sharey=False)
+#
+#
+#     pyplot.yticks(rotation=90)
+#     pyplot.savefig('Box-Whis.eps', format='eps')
+#     pyplot.show()
+#
+#
+#     pyplot.close()
+#########################
 
     ### Correlation Matrix Plot ###
 
@@ -160,178 +160,6 @@ def combinations(iterable, r):
             indices[j] = indices[j - 1] + 1
         yield tuple(pool[i] for i in indices)
 
-
-# convert series to supervised learning
-def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
-    n_vars = 1 if type(data) is list else data.shape[1]
-    df = DataFrame(data)
-    cols, names = list(), list()
-    # input sequence (t-n, ... t-1)
-    for i in range(n_in, 0, -1):
-        cols.append(df.shift(i))
-        names += [('var%d(t-%d)' % (j + 1, i)) for j in range(n_vars)]
-    # forecast sequence (t, t+1, ... t+n)
-    for i in range(0, n_out):
-        cols.append(df.shift(-i))
-        if i == 0:
-            names += [('var%d(t)' % (j + 1)) for j in range(n_vars)]
-        else:
-            names += [('var%d(t+%d)' % (j + 1, i)) for j in range(n_vars)]
-    # put it all together
-    agg = concat(cols, axis=1)
-    agg.columns = names
-    # drop rows with NaN values
-    if dropnan:
-        agg.dropna(inplace=True)
-    return agg
-
-
-def define_model():
-    seed = 7
-    np.random.seed(seed)
-
-    model = Sequential()
-
-    # model.add(Dense(4 * n_features))
-    # model.add(Dense(20 * n_features))
-    # model.add(Dense(4 * n_features))
-
-    model.add(Dense(2))
-    model.add(Dense(10))
-    model.add(Dense(2))
-
-    # model.add(Dense(200))
-    # model.add(Dropout(0.1))
-    # model.add(LSTM(1, return_sequences=True))
-    model.add(LSTM(10, return_sequences=False))
-    #
-
-    # model.add(Dense(4 * n_features))
-    # model.add(LSTM(1 * n_features, return_sequences=True))
-    #
-    #
-    # model.add(LSTM(1, return_sequences=False))
-
-    # model.add(Dropout(0.2))
-    # model.add(LSTM(1, return_sequences=False))
-    model.add(Dense(1))
-
-    model.add(Activation('relu'))
-    model.compile(loss='mean_squared_error', optimizer='adam')
-
-    return model
-
-
-# this runs LSTM model once and predict the entire test set based on that trained model
-def pred_entire_test_set_based_on_LSTM_model(look_past_win, stand_train, stand_test, test_index):
-    n_hours = look_past_win
-    train = stand_train
-    test = stand_test
-
-    # dataset = np.stack([stand_train, stand_test], axis=1)
-
-    testSetIndexes = test_index
-
-    # train = values[:n_train_hours, :]
-    # test = values[n_train_hours:, :]
-
-    # split into input and outputs
-    n_obs = n_hours * n_features
-    train_X, train_y = train[:, :n_obs], train[:, -n_features]
-    test_X, test_y = test[:, :n_obs], test[:, -n_features]
-    print(train_X.shape, len(train_X), train_y.shape)
-    # reshape input to be 3D [samples, timesteps, features]
-    train_X = train_X.reshape((train_X.shape[0], n_hours, n_features))
-    test_X = test_X.reshape((test_X.shape[0], n_hours, n_features))
-    print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
-
-    model = define_model()
-
-    # fit network
-    history = model.fit(train_X, train_y, epochs=100, batch_size=5, validation_data=(test_X, test_y), verbose=0,
-                        shuffle=False)
-
-    # history.params
-    # plot history
-    pyplot.plot(history.history['loss'], label='train')
-    pyplot.plot(history.history['val_loss'], label='test')
-    pyplot.legend()
-    pyplot.show()
-
-    # make a prediction
-    yhat = model.predict(test_X)
-    test_X = test_X.reshape((test_X.shape[0], n_hours * n_features))
-    # invert scaling for forecast
-    inv_yhat = concatenate((yhat, test_X[:, -(n_features - 1):]), axis=1)
-    inv_yhat = scaler.inverse_transform(inv_yhat)
-    inv_yhat = inv_yhat[:, 0]
-    # invert scaling for actual
-    test_y = test_y.reshape((len(test_y), 1))
-    inv_y = concatenate((test_y, test_X[:, -(n_features - 1):]), axis=1)
-    inv_y = scaler.inverse_transform(inv_y)
-    inv_y = inv_y[:, 0]
-
-    [errors, acc] = report_error(predictions=np.array(inv_yhat), y_infer_actual_yield=np.array(inv_y))
-    plot(y_infer_actual_yield=inv_y, inferDataSetIndex=testSetIndexes, modelAccuracy=acc,
-         growerAccuracy=100 - 7.6, predictions=inv_yhat, y_infer_pred_yield=np.zeros((len(inv_yhat))))
-
-    return inv_y, inv_yhat
-
-
-# this train/runs LSTM model multiple times.
-def pred_next_entry_based_on_LSTM_model(look_past_win, stand_train, stand_test, test_index):
-    n_hours = look_past_win
-    train = stand_train
-    test = stand_test
-
-    # dataset = np.stack([stand_train, stand_test], axis=1)
-
-    testSetIndexes = test_index
-
-    # train = values[:n_train_hours, :]
-    # test = values[n_train_hours:, :]
-
-    # split into input and outputs
-    n_obs = n_hours * n_features
-    train_X, train_y = train[:, :n_obs], train[:, -n_features]
-    test_X, test_y = test[:, :n_obs], test[:, -n_features]
-    print(train_X.shape, len(train_X), train_y.shape)
-    # reshape input to be 3D [samples, timesteps, features]
-    train_X = train_X.reshape((train_X.shape[0], n_hours, n_features))
-    test_X = test_X.reshape((test_X.shape[0], n_hours, n_features))
-    print(train_X.shape, train_y.shape, test_X.shape, test_y.shape)
-
-    model = define_model()
-
-    # fit network
-    history = model.fit(train_X, train_y, epochs=100, batch_size=5, validation_data=(test_X, test_y), verbose=0,
-                        shuffle=False)
-
-    # history.params
-    # plot history
-    pyplot.plot(history.history['loss'], label='train')
-    pyplot.plot(history.history['val_loss'], label='test')
-    pyplot.legend()
-    pyplot.show()
-
-    # make a prediction
-    yhat = model.predict(test_X)
-    test_X = test_X.reshape((test_X.shape[0], n_hours * n_features))
-    # invert scaling for forecast
-    inv_yhat = concatenate((yhat, test_X[:, -(n_features - 1):]), axis=1)
-    inv_yhat = scaler.inverse_transform(inv_yhat)
-    inv_yhat = inv_yhat[:, 0]
-    # invert scaling for actual
-    test_y = test_y.reshape((len(test_y), 1))
-    inv_y = concatenate((test_y, test_X[:, -(n_features - 1):]), axis=1)
-    inv_y = scaler.inverse_transform(inv_y)
-    inv_y = inv_y[:, 0]
-
-    [errors, acc] = report_error(predictions=np.array(inv_yhat), y_infer_actual_yield=np.array(inv_y))
-    plot(y_infer_actual_yield=inv_y, inferDataSetIndex=testSetIndexes, modelAccuracy=acc,
-         growerAccuracy=100 - 7.6, predictions=inv_yhat, y_infer_pred_yield=np.zeros((len(inv_yhat))))
-
-    return inv_y[0], inv_yhat[0]
 
 
 def feature_selection(dataset, target_feature='actual_yield', feature_select_method='Most-Corr'):
@@ -498,60 +326,17 @@ def odin(dataset, target_feature='actual_yield', export_corr_hist='True', num_of
     # dataset = dataset.dropna()
     dataset = dataset.astype(float)
 
+    print("data_visul_flag", export_corr_hist)
+
     if (export_corr_hist == True):
-        dataVisualization(dataset=dataset, target_feat=target_feature)
+        dataVisualization(data=dataset, target_feat=target_feature)
+        print("\n Data visualization has ended. \n")
 
     most_corr_sorted_labels = feature_selection(dataset=dataset, target_feature=target_feature,
                                                 feature_select_method=feature_select_methods)
     print("most corr features are: \n", str(most_corr_sorted_labels))
 
     return most_corr_sorted_labels[0:num_of_most_corr_feats - 1]
-
-
-def get_spawn_reg(X_train, y_train):
-    def spawn_reg(seed, dataset_name):
-
-        tmp_folder = '/tmp/autosklearn_parallel_example_tmp'
-        output_folder = '/tmp/autosklearn_parallel_example_out'
-
-        """Spawn a subprocess.
-
-        auto-sklearn does not take care of spawning worker processes. This
-        function, which is called several times in the main block is a new
-        process which runs one instance of auto-sklearn.
-        """
-
-        # Use the initial configurations from meta-learning only in one out of
-        # the four processes spawned. This prevents auto-sklearn from evaluating
-        # the same configurations in four processes.
-        if seed == 0:
-            initial_configurations_via_metalearning = 25
-            smac_scenario_args = {}
-        else:
-            initial_configurations_via_metalearning = 0
-            smac_scenario_args = {'initial_incumbent': 'RANDOM'}
-
-        # Arguments which are different to other runs of auto-sklearn:
-        # 1. all classifiers write to the same output directory
-        # 2. shared_mode is set to True, this enables sharing of data between
-        # models.
-        # 3. all instances of the AutoSklearnClassifier must have a different seed!
-        automl = autosklearn.regression.AutoSklearnRegressor(
-            time_left_for_this_task=60,  # sec., how long should this seed fit process run
-            per_run_time_limit=10,  # sec., each model may only take this long before it's killed
-            ml_memory_limit=1024,  # MB, memory limit imposed on each call to a ML algorithm
-            shared_mode=True,  # tmp folder will be shared between seeds
-            tmp_folder=tmp_folder,
-            output_folder=output_folder,
-            delete_tmp_folder_after_terminate=False,
-            ensemble_size=0,  # ensembles will be built when all optimization runs are finished
-            initial_configurations_via_metalearning=initial_configurations_via_metalearning,
-            seed=seed,
-            smac_scenario_args=smac_scenario_args,
-        )
-        automl.fit(X_train, y_train, dataset_name=dataset_name)
-
-    return spawn_reg
 
 
 def autoML_find_best_model(train_X_labels, train_y_label, train_dataset, test_X, n_cores=3,
@@ -572,7 +357,7 @@ def autoML_find_best_model(train_X_labels, train_y_label, train_dataset, test_X,
     automl = autosklearn.regression.AutoSklearnRegressor(
         ensemble_size=1,
         initial_configurations_via_metalearning=0,
-        # include_preprocessors=["no_preprocessing"],  # in a case that we do not do any feature-engineering
+        # include_preprocessors=["no_preprocessing"],  # in a case that we do not autoML does any feature-engineering
         time_left_for_this_task=processing_time_in_secs,
         per_run_time_limit=int(processing_time_in_secs / 10),
         tmp_folder='/tmp/autosklearn_regression_example_tmp',
@@ -672,8 +457,6 @@ def standardization(X):
     return pd.DataFrame(tempX, index=indexes, columns=columnNames)
 
 
-
-
 def main():
 
 
@@ -717,11 +500,10 @@ def main():
     else:
         model_finder = config.model_finder
 
-
-
-
-
-
+    if args.dataset_stat_visual_flag:
+        dataset_stat_visual_flag = args.dataset_stat_visual_flag
+    else:
+        dataset_stat_visual_flag = config.dataset_stat_visual_flag
 
     # load dataset
     if (verbose > 0):
@@ -733,9 +515,6 @@ def main():
         print (dataset)
     elif (verbose > 0 and verbose <=5):
         print ("dataset column names are:", str (dataset.columns.values))
-
-
-
 
     # based on the input file format there should be two first columns in the dataset_file that are translated into indeces (refer to the example input file).
     dataset = dataset.set_index(['indx', 'week_num'])
@@ -762,6 +541,8 @@ def main():
     dataset = standardization(dataset)
 
     # do feature engineering on the input dataset
+    # remove actual_yield and projected_yield from the features that we do feat_eng on them.
+    # we shouldn't rely on 'projected_yield' as an input feat to our yield prediction models.
     feat_engineered_dataset = feature_engineering(
                                                   dataset=dataset.drop(['actual_yield', 'projected_yield'], axis=1),
                                                   num_feat_to_select_and_comb=2,
@@ -777,8 +558,12 @@ def main():
 
     # select the "num_of_most_corr_feats" most correlated features based on "feature_select_methods" from the feature engineered dataset.
     # also odin save the correlation map onto a file.
+    if (verbose>0):
+        print("################################")
+        print("Data Statis Visualization and feature selection have started....")
+    print("data visul flag ", dataset_stat_visual_flag)
     name_of_most_corr_feat = odin(dataset=feat_engineered_dataset, target_feature='actual_yield',
-                                  export_corr_hist=False, num_of_most_corr_feats=num_of_most_corr_feats, feature_select_methods=feature_select_methods)
+                                  export_corr_hist=dataset_stat_visual_flag, num_of_most_corr_feats=num_of_most_corr_feats, feature_select_methods=feature_select_methods)
     if (verbose >0):
         print ("the labels for the most corr features are:", str (name_of_most_corr_feat[1:]))
 
@@ -788,8 +573,6 @@ def main():
 
     #dataset_with_new_comb_feats = standardization(dataset_with_new_comb_feats)
     list_of_impr_feat_for_H2O = name_of_most_corr_feat[1:]  # we exclude actual_yield from the feature's list
-
-    # dataVisualization(data=dataset)
 
     # dataset = dataset.drop(['projected_yield'],axis=1)
     #train_dataset = dataset[0:int(train_precental * len(dataset))]
@@ -857,7 +640,13 @@ def main():
 
 
 
-
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 if __name__ == '__main__':
     # initiate the parser
@@ -866,19 +655,22 @@ if __name__ == '__main__':
     parser.add_argument("--train_set_size", action="store", dest ="train_set_size", type=float,
                         help="This argument determines the percentage of dataset that is dedicated to train_set (e.g., 0.9 means the first 90 precent chunk of dataset is dedicated to training set).")
     parser.add_argument("--dataset_file_addr",  action="store", dest= "dataset_file_add", type=str,
-                        help="this should point to a climate/yield file that you can find an example file in the current folder. note that the sheet-name has to be entire_data.")
+                        help="This should point to a climate/yield file that you can find an example file in the current folder. note that the sheet-name has to be entire_data.")
     parser.add_argument("--oprs_for_feat_eng",  action="store", dest="oprs_for_feat_eng", type=str,
-                        help="this argument determines the operations that should be used in feat engineering (e.g., ""[add, sub, exp]"", or ""mult"").")
+                        help="This argument determines the operations that should be used in feat engineering (e.g., \"[\"Add\", \"Sub\", \"Exp\", \"Sin\", \"Cos\", \"Mult\", \"Div\"]\", or \"mult\").\n Be careful about quotations when you make the list of feat_engin operations.")
     parser.add_argument("--max_run_time",  action="store", dest="max_run_time", type=int,
-                        help="this argument determines the time that we want to spend on model finding/tuning (e.g., 3600, means one hour).")
+                        help="This argument determines the time that we want to spend on model finding/tuning (e.g., 3600, means one hour).")
     parser.add_argument("--num_of_most_corr_feats",  action="store", dest="num_of_most_corr_feats", type=int,
-                        help="this argument determines the number of most important features (parameters) that are selected from feature engineered dataset (e.g., 20).")
+                        help="This argument determines the number of most important features (parameters) that are selected from feature engineered dataset (e.g., 20).")
     parser.add_argument("--feature_select_methods",  action="store", dest="feature_select_methods", type=str,
-                        help="this argument determines the feature selection method (it could be ""feat-import"", ""rec-feat-elimin"", ""univar-select"", or ""most-corr"").")
+                        help="This argument determines the feature selection method (it could be ""feat-import"", ""rec-feat-elimin"", ""univar-select"", or ""most-corr"").")
     parser.add_argument("--verbose", '-v', action="store", dest="verbose", type=int,
-                        help="this argument determines the verbosity level (it could be 0, 5, 10).")
+                        help="This argument determines the verbosity level (it could be 0, 5, 10).")
     parser.add_argument("--model_finder",  action="store", dest="model_finder", type=str,
-                        help="this argument determines which automated model finder should be deployed, automl, or h20.")
+                        help="This argument determines which automated model finder algorithm should be deployed, automl, or h20.")
+    parser.add_argument("--dataset_stat_visual_flag", type=str2bool, nargs='?',dest="dataset_stat_visual_flag",
+                        help="This argument determines if statist graphs from dataset values (i.e., dist for each param, Pearson corr-map, etc.) should be generated and saved into files.")
+
 
     # read arguments from the command line
     args = parser.parse_args()
