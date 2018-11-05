@@ -326,7 +326,7 @@ def odin(dataset, target_feature='actual_yield', export_corr_hist='True', num_of
     # dataset = dataset.dropna()
     dataset = dataset.astype(float)
 
-    print("data_visul_flag", export_corr_hist)
+
 
     if (export_corr_hist == True):
         dataVisualization(data=dataset, target_feat=target_feature)
@@ -381,18 +381,10 @@ def h2o_design_space_search(train_X_labels, train_y_label, train_dataset, test_X
     np.random.seed(seed)
     h2o.init(max_mem_size_GB=3)
 
-    # Import a sample binary outcome train/test set into H2O
-    # train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-    # test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
-
     # Identify predictors and response
     x = train_X_labels
     y = train_y_label
-    # x.remove(y)
 
-    # For binary classification, response should be a factor
-    # train[y] = train[y].asfactor()
-    # test[y] = test[y].asfactor()
     train_dataset = h2o.H2OFrame(train_dataset)
     # Run AutoML for 30 seconds
     aml = H2OAutoML(
@@ -406,16 +398,6 @@ def h2o_design_space_search(train_X_labels, train_y_label, train_dataset, test_X
     # View the AutoML Leaderboard
     lb = aml.leaderboard
 
-    #print(lb)
-
-    # print ("best model params are:" + str(lb.) )
-
-    # my_training_frame = aml.actual_params['training_frame']
-    # col_used = h2o.get_frame(my_training_frame)
-    # print(col_used.columns)
-
-    # The leader model is stored here
-    #aml.leader
 
     # If you need to generate predictions on a test set, you can make
     # predictions directly on the `"H2OAutoML"` object, or on the leader
@@ -431,16 +413,6 @@ def h2o_design_space_search(train_X_labels, train_y_label, train_dataset, test_X
     # preds = np.array(preds) - (0.9 * lb[1, 5]) # minuse the yield values from their MAE
     print("predicted values before manipulating them in rising edges:" + str(preds))
     new_preds = preds
-    # new_preds = []
-    # old_pred = preds[0]
-    # new_preds.append(old_pred)
-    # for pred in preds[1:]:
-    #     new_pred = pred
-    #     if (old_pred < new_pred): # there is a ascending in the yield value
-    #         new_preds.append( 1.05 * (((new_pred- old_pred)/old_pred)+1) * new_preds[-1])
-    #     else:
-    #         new_preds.append(new_pred)
-    #     old_pred = new_pred
     return [lb[1, 5], np.array(new_preds)]
 
 
@@ -508,7 +480,7 @@ def main():
     # load dataset
     if (verbose > 0):
         print("###########################################")
-        print ("datset is read from" + str(dataset_file_add) + ".")
+        print ("datset is read from" + str(dataset_file_add) + "." + "\n make sure that the format within file is followed correctly." )
         print("###########################################")
     dataset = pd.read_excel(dataset_file_add, sheetname='entire_data')
     if (verbose > 5):
@@ -544,7 +516,7 @@ def main():
     # remove actual_yield and projected_yield from the features that we do feat_eng on them.
     # we shouldn't rely on 'projected_yield' as an input feat to our yield prediction models.
     feat_engineered_dataset = feature_engineering(
-                                                  dataset=dataset.drop(['actual_yield', 'projected_yield'], axis=1),
+                                                  dataset=dataset.drop(['actual_yield'], axis=1),
                                                   num_feat_to_select_and_comb=2,
                                                   opr_list=oprs_for_feat_eng
                                                  )
@@ -619,7 +591,7 @@ def main():
 
     [mae, model_acc_on_test] = report_error(predictions=np.array([float(x) for x in pred]),
                                             y_infer_actual_yield=np.array([float(x) for x in test_y]))
-    #pred = pred - np.array(0.9 * mae)
+    pred = pred - np.array(0.9 * mae)
 
     [mae, model_acc_on_test] = report_error(predictions=np.array([float(x) for x in pred]),
                                             y_infer_actual_yield=np.array([float(x) for x in test_y]))
@@ -636,7 +608,6 @@ def main():
          y_infer_pred_yield=np.array([float(x) for x in test_manual_preds]))
 
 
-    features_and_their_MAE.append([best_model_MAE, model_acc_on_test, list(tuple)])
 
 
 
