@@ -1,9 +1,6 @@
 
 # best command line parameters that are found so far:
-# python3 ../ML_Model_Finder/ML_Model_Finder.py --dataset_file_addr ./NF_climate_yield_data_per_compart_removed_uncomplete_rows_lag_1.xlsx
-#  --oprs_for_feat_eng "["Mult"]" --max_run_time 500 --num_of_most_corr_feats 10 --feature_select_methods Feat-Import
-#  --model_finder H2O --dataset_stat_visual_flag False
-
+# python3 ../ML_Model_Finder/ML_Model_Finder.py --dataset_file_addr ./Agrimind_yield_climate_data_total_trimmed_lag_1.xlsx --oprs_for_feat_eng "["Mult"]" --max_run_time 500 --num_of_most_corr_feats 30 --feature_select_methods Feat-Import --model_finder AutoML --dataset_stat_visual_flag False
 
 
 from math import sqrt
@@ -71,7 +68,7 @@ def dataVisualization(data, target_feat):
 
     ### Correlation Matrix Plot ###
 
-    pyplot.rcParams.update({'font.size': 2})
+    pyplot.rcParams.update({'font.size': 0.2})
 
     ix = abs(data.corr()).sort_values(target_feat, ascending=False).index
     data = data.loc[:, ix]
@@ -524,7 +521,7 @@ def main():
     # remove actual_yield and projected_yield from the features that we do feat_eng on them.
     # we shouldn't rely on 'projected_yield' as an input feat to our yield prediction models.
     feat_engineered_dataset = feature_engineering(
-                                                  dataset=dataset.drop(['actual_yield', 'projected_yield'], axis=1),
+                                                  dataset=dataset.drop(['actual_yield'], axis=1),
                                                   num_feat_to_select_and_comb=2,
                                                   opr_list=oprs_for_feat_eng
                                                  )
@@ -602,7 +599,7 @@ def main():
 
     [mae, model_acc_on_test] = report_error(predictions=np.array([float(x) for x in pred]),
                                             y_infer_actual_yield=np.array([float(x) for x in test_y]))
-    #pred = pred - np.array(0.9 * mae)
+    pred = pred - np.array(0.9 * mae)
 
     [mae, model_acc_on_test] = report_error(predictions=np.array([float(x) for x in pred]),
                                             y_infer_actual_yield=np.array([float(x) for x in test_y]))
