@@ -521,7 +521,7 @@ def main():
     # remove actual_yield and projected_yield from the features that we do feat_eng on them.
     # we shouldn't rely on 'projected_yield' as an input feat to our yield prediction models.
     feat_engineered_dataset = feature_engineering(
-                                                  dataset=dataset.drop(['actual_yield'], axis=1),
+                                                  dataset=dataset.drop(['actual_yield', 'projected_yield'], axis=1),
                                                   num_feat_to_select_and_comb=2,
                                                   opr_list=oprs_for_feat_eng
                                                  )
@@ -551,11 +551,11 @@ def main():
     #dataset_with_new_comb_feats = standardization(dataset_with_new_comb_feats)
     list_of_impr_feat_for_H2O = name_of_most_corr_feat[1:]  # we exclude actual_yield from the feature's list
 
-    # dataset = dataset.drop(['projected_yield'],axis=1)
+    # dataset = dataset.drop(['fed_yield'],axis=1)
     #train_dataset = dataset[0:int(train_precental * len(dataset))]
     #test_dataset = dataset[int(train_precental * len(dataset)):]
 
-    #listOfTupleNames = list(combinations(list_of_impr_feat_for_H2O, len(list_of_impr_feat_for_H2O)))
+    #listOfTupleNames = list((list_of_impr_feat_for_H2O, len(list_of_impr_feat_for_H2O)))
     features_and_their_MAE = 30
 
     # dataVisualization(data=dataset)
@@ -599,7 +599,7 @@ def main():
 
     [mae, model_acc_on_test] = report_error(predictions=np.array([float(x) for x in pred]),
                                             y_infer_actual_yield=np.array([float(x) for x in test_y]))
-    pred = pred - np.array(0.9 * mae)
+    pred = pred - np.array(0.7 * mae)
 
     [mae, model_acc_on_test] = report_error(predictions=np.array([float(x) for x in pred]),
                                             y_infer_actual_yield=np.array([float(x) for x in test_y]))
