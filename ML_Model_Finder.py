@@ -1,8 +1,6 @@
 
 # best command line parameters that are found so far:
-# python3 ../ML_Model_Finder/ML_Model_Finder.py --dataset_file_addr ./NF_climate_yield_data_per_compart_removed_uncomplete_rows_lag_1.xlsx
-#  --oprs_for_feat_eng "["Mult"]" --max_run_time 500 --num_of_most_corr_feats 10 --feature_select_methods Feat-Import
-#  --model_finder H2O --dataset_stat_visual_flag False
+# python3 ../ML_Model_Finder/ML_Model_Finder.py --dataset_file_addr ./NF_climate_yield_data_per_compart_removed_uncomplete_rows_lag_1.xlsx --oprs_for_feat_eng "["Mult", "Div"]" --max_run_time 200 --num_of_most_corr_feats 20 --feature_select_methods Feat-Import --model_finder AutoML --dataset_stat_visual_flag False
 
 
 
@@ -639,13 +637,13 @@ if __name__ == '__main__':
     parser.add_argument("--dataset_file_addr",  action="store", dest= "dataset_file_add", type=str,
                         help="This should point to a climate/yield file that you can find an example file in the current folder. note that the sheet-name has to be entire_data.")
     parser.add_argument("--oprs_for_feat_eng",  action="store", dest="oprs_for_feat_eng", type=str,
-                        help="This argument determines the operations that should be used in feat engineering (e.g., \"[\"Add\", \"Sub\", \"Exp\", \"Sin\", \"Cos\", \"Mult\", \"Div\"]\", or \"mult\").\n Be careful about quotations when you make the list of feat_engin operations.")
+                        help="This argument deftermines the operations that should be used in feat engineering (e.g., \"[\"Add\", \"Sub\", \"Exp\", \"Sin\", \"Cos\", \"Mult\", \"Div\"]\", or \"mult\").\n Be careful about quotations when you make the list of feat_engin operations.")
     parser.add_argument("--max_run_time",  action="store", dest="max_run_time", type=int,
                         help="This argument determines the time that we want to spend on model finding/tuning (e.g., 3600, means one hour).")
     parser.add_argument("--num_of_most_corr_feats",  action="store", dest="num_of_most_corr_feats", type=int,
                         help="This argument determines the number of most important features (parameters) that are selected from feature engineered dataset (e.g., 20).")
     parser.add_argument("--feature_select_methods",  action="store", dest="feature_select_methods", type=str,
-                        help="This argument determines the feature selection method (it could be ""feat-import"", ""rec-feat-elimin"", ""univar-select"", or ""most-corr"").")
+                        help="This argument determines the feature selection method (it could be ""Feat-Import"", ""Rec-Feat-Elimin"", ""Univar-Select"", or ""Most-Corr"").")
     parser.add_argument("--verbose", '-v', action="store", dest="verbose", type=int,
                         help="This argument determines the verbosity level (it could be 0, 5, 10).")
     parser.add_argument("--model_finder",  action="store", dest="model_finder", type=str,
